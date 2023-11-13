@@ -1,56 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-
-import {
-  TextInput,
-  Button,
-  Select,
-  RangeInput,
-  CheckBox,
-  RadioButtonGroup,
-  Box,
-  Text
-} from 'grommet';
-
 import { parse, transpose, prettyPrint } from 'chord-magic';
-
 import generatePDF from './lib/generate-pdf';
-
+import Controls from './components/Controls';
+import Sheet from './components/Sheet';
+import { formatChords, findInObject } from './utils/utils';
 import './App.css';
 
 const corsURI = process.env.REACT_APP_CORS_SERVER;
-
-function formatChords(chords) {
-  let formattedChords = chords;
-
-  formattedChords = formattedChords.replace(/\[ch\]/g, '<b>');
-  formattedChords = formattedChords.replace(/\[\/ch\]/g, '</b>');
-
-  formattedChords = formattedChords.replace(/\[tab\]/g, '<div>');
-  formattedChords = formattedChords.replace(/\[\/tab\]/g, '</div>');
-
-  return { __html: formattedChords };
-}
-
-// taken from YagoLopez
-// https://gist.github.com/YagoLopez
-// https://gist.github.com/YagoLopez/1c2fe87d255fc64d5f1bf6a920b67484
-function findInObject(obj, key) {
-  let objects = [];
-  const keys = Object.keys(obj || {});
-
-  for (let i = 0; i < keys.length; i += 1) {
-    const _key = keys[i];
-    if (Object.prototype.hasOwnProperty.call(obj, _key)) {
-      if (typeof obj[_key] === 'object') {
-        objects = [...objects, ...findInObject(obj[_key], key)];
-      } else if (_key === key) {
-        objects.push(obj[_key]);
-      }
-    }
-  }
-
-  return objects;
-}
 
 function App() {
   const [uri, setUri] = useState(
@@ -153,7 +109,6 @@ function App() {
             regex.push(replacer + ' '.repeat(chordsDiff));
           }
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.info('failed to transpose', chord);
         }
       }
@@ -175,54 +130,22 @@ function App() {
 
   return (
     <>
-      <div className="controls">
-        <TextInput value={uri} onChange={e => setUri(e.target.value)} />
+      <Controls
+        uri={uri}
+        setUri={setUri}
+        transposeStep={transposeStep}
+        setTransposeStep={setTransposeStep}
+        loadSong={loadSong}
+        downloadPdf={downloadPdf}
+        parsingStyle={parsingStyle}
+        setParsingStyle={setParsingStyle}
+        halftoneStyle={halftoneStyle}
+        setHalftoneStyle={setHalftoneStyle}
+        simplify={simplify}
+        setSimplify={setSimplify}
+      />
 
-        <Box className="box-1" pad="none">
-          <Text>{`TRANSPOSE: ${transposeStep}`}</Text>
-          <RangeInput
-            style={{ minWidth: '200px' }}
-            min={-12}
-            max={12}
-            step={1}
-            value={transposeStep}
-            onChange={e => setTransposeStep(parseInt(e.currentTarget.value, 10))}
-          />
-        </Box>
-
-        <Box className="box-2" pad="none" style={{ flexDirection: 'row' }}>
-          <Button primary onClick={loadSong} label="LOAD SONG" />
-          <Button primary onClick={downloadPdf} label="DOWNLOAD PDF" />
-        </Box>
-
-        <Select
-          options={['NORMAL', 'NORTHERN EUROPEAN', 'SOUTHERN EUROPEAN']}
-          placeholder={'PARSING STYLE'}
-          value={parsingStyle}
-          onChange={({ option }) => setParsingStyle(option)}
-        />
-
-        <Box className="box-3" pad="none" style={{ flexDirection: 'row' }}>
-          <RadioButtonGroup
-            name="halftoneStyle"
-            options={['SHARPS', 'FLATS']}
-            value={halftoneStyle}
-            onChange={e => setHalftoneStyle(e.currentTarget.value)}
-          />
-
-          <CheckBox
-            label="SIMPLIFY"
-            checked={simplify}
-            onChange={e => setSimplify(e.target.checked)}
-          />
-        </Box>
-      </div>
-
-      <div className="sheet">
-        <div className="artist">{artist}</div>
-        <div className="song">{song}</div>
-        <div className="chords" dangerouslySetInnerHTML={renderChords(transposedChords)}></div>
-      </div>
+      <Sheet artist={artist} song={song} renderChords={renderChords} />
     </>
   );
 }
